@@ -1,0 +1,25 @@
+# Build Options
+BOOTMAGIC_ENABLE = no       # Enable Bootmagic Lite
+MOUSEKEY_ENABLE = yes       # Mouse keys
+EXTRAKEY_ENABLE = no        # Audio control and System control
+CONSOLE_ENABLE = no         # Console for debug
+COMMAND_ENABLE = no         # Commands for debug and configuration
+NKRO_ENABLE = no            # Enable N-Key Rollover
+BACKLIGHT_ENABLE = no       # Enable keyboard backlight functionality
+AUDIO_ENABLE = no           # Audio output
+RGBLIGHT_ENABLE = yes       # Enable WS2812 RGB underlight.
+RGB_MATRIX_ENABLE = no
+SWAP_HANDS_ENABLE = no      # Enable one-hand typing
+OLED_ENABLE = yes
+OLED_DRIVER = SSD1306
+KEY_OVERRIDE_ENABLE = yes
+SPLIT_KEYBOARD = yes
+#SPLIT_TRANSPORT = custom
+#SRC += transaction.c transport_org.c
+#SRC += transport.c transaction.c serial.c
+VIA_ENABLE = no
+JOYSTICK_ENABLE = yes
+JOYSTICK_DRIVER = analog
+POINTING_DEVICE_ENABLE = yes
+POINTING_DEVICE_DRIVER = custom
+LTO_ENABLE = yes
