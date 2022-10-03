@@ -260,10 +260,11 @@ bool oled_task_user(void) {
     }
     oled_write_ln(read_keylog(), false);
     oled_write_ln(read_keylogs(), false);
+  #ifdef JOYSTICK_ENABLE
     oled_write_P(PSTR("Joy Mode: "), false);
     char mode_chars[2] = {(char)get_joystick_mode() + 0x30};
     oled_write_ln(mode_chars, false);
-
+  #endif // JOYSTICK_ENABLE
   } else {
       render_logo();
   }

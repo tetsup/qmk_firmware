@@ -2,7 +2,9 @@
 
 #include "joystick.h"
 #include "analog.h"
-//#include "split_util.h"
+#include "split_util.h"
+#include "transactions.h"
+#include "crc.h"
 
 #ifdef JOYSTICK_ENABLE
 
@@ -13,7 +15,7 @@
   #define JOYMOUSE_DIV_FAST 100
   #define JOYMOUSE_DIV_SLOW 250
 
-  static int8_t joystick_mode = 1;
+  static int8_t joystick_mode = 0;
   static int16_t mouse_buffer_x = 0;
   static int16_t mouse_buffer_y = 0;
   const int16_t joymouse_threshold = 15;
@@ -25,7 +27,10 @@
   const int16_t joystick_multiplier_32 = 12;
   const bool joystick_inverse_x = true;
   const bool joystick_inverse_y = true;
-
+  static joystick_status_t own_joystick_status;
+  #ifdef SPLIT_JOYSTICK_ENABLE
+  static joystick_status_t slave_joystick_status = {.joystick_x=0, .joystick_y=0, .joystick_button=0};
+  #endif // SPLIT_JOYSTICK_ENABLE
 #endif // JOYOSTICK_ENABLE
 
 #ifdef OLED_ENABLE
@@ -42,16 +47,16 @@
     else return analogReadPin(pin) - 512 - offset;
   }
 
-  int16_t joystick_read(pin_t pin, bool inverse, int16_t offset){
-    return (joystick_read_raw(pin, inverse, offset)) * joystick_multiplier_32 / 32;
+  int16_t joystick_trim(int16_t joystick_raw){
+    return joystick_raw * joystick_multiplier_32 / 32;
   }
-
-  int16_t joymouse_read(pin_t pin, bool inverse, int16_t offset){
-    const int16_t joy = joystick_read_raw(pin, inverse, offset);
-    if(joy > 0)
-      return joy > joymouse_threshold ? joy - joymouse_threshold : 0;
+//#if POINTING_DEVICE_ENABLE = yes
+//#if POINTING_DEVICE_DRIVER = custom
+  int16_t joymouse_trim(int16_t joystick_raw){
+    if(joystick_raw > 0)
+      return joystick_raw > joymouse_threshold ? joystick_raw - joymouse_threshold : 0;
     else
-      return joy < -joymouse_threshold ? joy + joymouse_threshold : 0;
+      return joystick_raw < -joymouse_threshold ? joystick_raw + joymouse_threshold : 0;
   }
 
   void change_joystick_mode(int8_t mode) {
@@ -87,33 +92,36 @@
   }
 
   void joystick_task(void) {
+    if(!joystick_calibrate()){
+      own_joystick_status.joystick_x = 0;
+      own_joystick_status.joystick_y = 0;
+    }
+    else{
+      own_joystick_status.joystick_x = joystick_read_raw(JOYSTICK_X, joystick_inverse_x, joystick_offset_x);
+      own_joystick_status.joystick_y = joystick_read_raw(JOYSTICK_Y, joystick_inverse_y, joystick_offset_y);
+    }
+    // todo joystick_button
+
     switch(joystick_mode){
       case 0: // gamepad
-        if(!joystick_calibrate()){
-          joystick_status.axes[0] = 0;
-          joystick_status.axes[1] = 0;
-        }
-        else{
-          joystick_status.axes[0] = joystick_read(JOYSTICK_X, joystick_inverse_x, joystick_offset_x);
-          joystick_status.axes[1] = joystick_read(JOYSTICK_Y, joystick_inverse_y, joystick_offset_y);
-        }
+        joystick_status.axes[is_keyboard_left() ? 0 : 2] = joystick_trim(own_joystick_status.joystick_x);
+        joystick_status.axes[is_keyboard_left() ? 1 : 3] = joystick_trim(own_joystick_status.joystick_y);
         //    setPinInput(JOYSTICK_BUTTON);
         //    joystick_status.buttons[0] = readPin(JOYSTICK_BUTTON);
         if(analogReadPin(F5) > 20)
-          joystick_status.buttons[0] = 3;
-        else
           joystick_status.buttons[0] = 0;
+        else
+          joystick_status.buttons[0] = 1;
+
         joystick_status.status |= JS_UPDATED;
         send_joystick_packet(&joystick_status);
         joystick_status.status &= ~JS_UPDATED;
         break;
 
       case 1: // mouse
-        if(!joystick_calibrate()) break;
-        
         joymouse_div = (layer_state & (1 << 2)) ? JOYMOUSE_DIV_SLOW : JOYMOUSE_DIV_FAST;
-        mouse_buffer_x += joymouse_read(JOYSTICK_X, joystick_inverse_x, joystick_offset_x);
-        mouse_buffer_y += joymouse_read(JOYSTICK_Y, joystick_inverse_y, joystick_offset_y);
+        mouse_buffer_x += joymouse_trim(own_joystick_status.joystick_x);
+        mouse_buffer_y += joymouse_trim(own_joystick_status.joystick_y);
         report_mouse_t currentReport = pointing_device_get_report();
         currentReport.x = mouse_buffer_x / joymouse_div;
         currentReport.y = mouse_buffer_y / joymouse_div;

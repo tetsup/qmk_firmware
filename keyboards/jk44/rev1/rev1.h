@@ -19,16 +19,15 @@
         { KC_NO, KC_NO, R33, R32, R31, R30 } \
     }
 
-#if defined(JOYSTICK_ENABLE) && defined(SPLIT_JOYSTICK_ENABLE)
-typedef struct _report_joystick_t{
-    uint8_t joystick_axes[2];
+#ifdef JOYSTICK_ENABLE
+typedef struct _joystick_status_t{
+    uint16_t joystick_x;
+    uint16_t joystick_y;
     uint8_t joystick_button;
-} report_joystick_t;
-#endif // defined(JOYSTICK_ENABLE) && defined(SPLIT_JOYSTICK_ENABLE)
+} joystick_status_t;
+#endif // JOYSTICK_ENABLE
 
 void change_joystick_mode(int8_t mode);
 uint8_t toggle_joystick_mode(void);
 void reset_joystick_calibrate(void);
 uint8_t get_joystick_mode(void);
-void joystick_set_shared_report(report_joystick_t state);
-report_joystick_t get_joystick_report(void);
