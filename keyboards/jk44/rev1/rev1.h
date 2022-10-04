@@ -23,7 +23,7 @@
 typedef struct _joystick_status_t{
     uint16_t joystick_x;
     uint16_t joystick_y;
-    uint8_t joystick_button;
+    uint8_t buttons;
 } joystick_status_t;
 #endif // JOYSTICK_ENABLE
 

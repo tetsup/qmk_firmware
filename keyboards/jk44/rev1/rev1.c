@@ -14,12 +14,15 @@
 
   #define JOYMOUSE_DIV_FAST 100
   #define JOYMOUSE_DIV_SLOW 250
+  #define JOYMOUSE_WHEEL_DIV_FAST 100
+  #define JOYMOUSE_WHEEL_DIV_SLOW 250
 
-  static int8_t joystick_mode = 0;
+  static int8_t joystick_mode = 1;
   static int16_t mouse_buffer_x = 0;
   static int16_t mouse_buffer_y = 0;
   const int16_t joymouse_threshold = 15;
   static int16_t joymouse_div = JOYMOUSE_DIV_FAST;
+  static int16_t joymouse_wheel_div = JOYMOUSE_WHEEL_DIV_FAST;
   static int8_t joystick_calibrate_count = 0;
   const int8_t joystick_calibrate_times = 5;
   static int16_t joystick_offset_x = 0;
@@ -29,7 +32,7 @@
   const bool joystick_inverse_y = true;
   static joystick_status_t own_joystick_status;
   #ifdef SPLIT_JOYSTICK_ENABLE
-  static joystick_status_t slave_joystick_status = {.joystick_x=0, .joystick_y=0, .joystick_button=0};
+  static joystick_status_t slave_joystick_status = {.joystick_x=0, .joystick_y=0, .buttons=0};
   #endif // SPLIT_JOYSTICK_ENABLE
 #endif // JOYOSTICK_ENABLE
 
@@ -96,7 +99,7 @@
     joystick_status_t *trans = (joystick_status_t*)out_data;
     trans->joystick_x = own_joystick_status.joystick_x;
     trans->joystick_y = own_joystick_status.joystick_y;
-    //trans->buttons = own_joystick_status.buttons;
+    trans->buttons = own_joystick_status.buttons;
   }
 
   void keyboard_post_init_kb(void){
@@ -114,35 +117,34 @@
       own_joystick_status.joystick_x = joystick_read_raw(JOYSTICK_X, joystick_inverse_x, joystick_offset_x);
       own_joystick_status.joystick_y = joystick_read_raw(JOYSTICK_Y, joystick_inverse_y, joystick_offset_y);
     }
+    own_joystick_status.buttons = analogReadPin(F5) > 20 ? 0 : 1;
     // todo joystick_button
-#   ifdef SPLIT_JOYSTICK_ENABLE
-      bool slave_joystick_update = false;
-      if(is_keyboard_master()){
-        // recvではなくてtransaction_register_rpcで登録して、syncで要求出して、もらう 関数用意されているけどmaster側の役目のような気がする
-        slave_joystick_update = transaction_rpc_recv(GET_JOYSTICK_DATA, sizeof(slave_joystick_status), &slave_joystick_status);
-      }
-#   endif // SPLIT_JOYSTICK_ENABLE
     if(!is_keyboard_master()) return;
+#   ifdef SPLIT_JOYSTICK_ENABLE
+      bool slave_joystick_update = transaction_rpc_recv(GET_JOYSTICK_DATA, sizeof(slave_joystick_status), &slave_joystick_status);
+#   endif // SPLIT_JOYSTICK_ENABLE
+    report_mouse_t currentReport = pointing_device_get_report();
     switch(joystick_mode){
       case 0: // gamepad
         #ifndef SPLIT_JOYSTICK_ENABLE
           joystick_status.axes[0] = joystick_trim(own_joystick_status.joystick_x);
           joystick_status.axes[1] = joystick_trim(own_joystick_status.joystick_y);
-          if(analogReadPin(F5) > 20)
-            joystick_status.buttons[0] = 0;
-          else
-            joystick_status.buttons[0] = 1;
         #else
-          joystick_status.axes[is_keyboard_left() ? 0 : 2] = joystick_trim(own_joystick_status.joystick_x);
-          joystick_status.axes[is_keyboard_left() ? 1 : 3] = joystick_trim(own_joystick_status.joystick_y);
-          //    setPinInput(JOYSTICK_BUTTON);
-          //    joystick_status.buttons[0] = readPin(JOYSTICK_BUTTON);
+          joystick_status.axes[0] = joystick_trim(own_joystick_status.joystick_x);
+          joystick_status.axes[1] = joystick_trim(own_joystick_status.joystick_y);
           if(slave_joystick_update){
-            joystick_status.axes[is_keyboard_left() ? 2 : 0] = joystick_trim(slave_joystick_status.joystick_x);
-            joystick_status.axes[is_keyboard_left() ? 3 : 1] = joystick_trim(slave_joystick_status.joystick_y);
-//            joystick_status.buttons[1] = slave_joystick_status.joystick_button; これ間違い
+            joystick_status.axes[2] = joystick_trim(slave_joystick_status.joystick_x);
+            joystick_status.axes[3] = joystick_trim(slave_joystick_status.joystick_y);
+            if(slave_joystick_status.buttons)
+              joystick_status.buttons[0] |= 0b10;
+            else
+              joystick_status.buttons[0] &= 0b01;
           }
         #endif // SPLIT_JOYSTICK_ENABLE
+        if(own_joystick_status.buttons)
+          joystick_status.buttons[0] |= 0b01;
+        else
+          joystick_status.buttons[0] &= 0b10;
         joystick_status.status |= JS_UPDATED;
         send_joystick_packet(&joystick_status);
         joystick_status.status &= ~JS_UPDATED;
@@ -150,13 +152,23 @@
 
       case 1: // mouse
         joymouse_div = (layer_state & (1 << 2)) ? JOYMOUSE_DIV_SLOW : JOYMOUSE_DIV_FAST;
+        joymouse_wheel_div = (layer_state & (1 << 2)) ? JOYMOUSE_WHEEL_DIV_SLOW : JOYMOUSE_WHEEL_DIV_FAST;
         mouse_buffer_x += joymouse_trim(own_joystick_status.joystick_x);
         mouse_buffer_y += joymouse_trim(own_joystick_status.joystick_y);
-        report_mouse_t currentReport = pointing_device_get_report();
         currentReport.x = mouse_buffer_x / joymouse_div;
         currentReport.y = mouse_buffer_y / joymouse_div;
         mouse_buffer_x %= joymouse_div;
         mouse_buffer_y %= joymouse_div;
+        #ifdef SPLIT_JOYSTICK_ENABLE
+          static int16_t mouse_buffer_h = 0;
+          static int16_t mouse_buffer_v = 0;
+          mouse_buffer_h += joymouse_trim(slave_joystick_status.joystick_x);
+          mouse_buffer_v -= joymouse_trim(slave_joystick_status.joystick_y);
+          currentReport.h = mouse_buffer_h / joymouse_wheel_div;
+          currentReport.v = mouse_buffer_v / joymouse_wheel_div;
+          mouse_buffer_h %= joymouse_wheel_div;
+          mouse_buffer_v %= joymouse_wheel_div;
+        #endif
         pointing_device_set_report(currentReport);
         pointing_device_send();
         break;
