@@ -10,7 +10,7 @@
 
   #define JOYSTICK_X F6
   #define JOYSTICK_Y F7
-  //#define JOYSTICK_BUTTON F5
+  #define JOYSTICK_BUTTON F5
 
   #define JOYMOUSE_DIV_FAST 100
   #define JOYMOUSE_DIV_SLOW 250
@@ -117,7 +117,7 @@
       own_joystick_status.joystick_x = joystick_read_raw(JOYSTICK_X, joystick_inverse_x, joystick_offset_x);
       own_joystick_status.joystick_y = joystick_read_raw(JOYSTICK_Y, joystick_inverse_y, joystick_offset_y);
     }
-    own_joystick_status.buttons = analogReadPin(F5) > 20 ? 0 : 1;
+    own_joystick_status.buttons = analogReadPin(JOYSTICK_BUTTON) > 20 ? 0 : 1;
     // todo joystick_button
     if(!is_keyboard_master()) return;
 #   ifdef SPLIT_JOYSTICK_ENABLE
