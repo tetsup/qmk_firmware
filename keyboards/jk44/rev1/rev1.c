@@ -91,6 +91,20 @@
     return false;
   }
 
+# ifdef SPLIT_JOYSTICK_ENABLE
+  void get_joystick_data_slave_handler(uint8_t in_buflen, const void* in_data, uint8_t out_buflen, void* out_data){
+    joystick_status_t *trans = (joystick_status_t*)out_data;
+    trans->joystick_x = own_joystick_status.joystick_x;
+    trans->joystick_y = own_joystick_status.joystick_y;
+    //trans->buttons = own_joystick_status.buttons;
+  }
+
+  void keyboard_post_init_kb(void){
+    transaction_register_rpc(GET_JOYSTICK_DATA, get_joystick_data_slave_handler);
+    keyboard_post_init_user();
+  }
+# endif // SPLIT_JOYSTICK_ENABLE
+
   void joystick_task(void) {
     if(!joystick_calibrate()){
       own_joystick_status.joystick_x = 0;
@@ -101,18 +115,34 @@
       own_joystick_status.joystick_y = joystick_read_raw(JOYSTICK_Y, joystick_inverse_y, joystick_offset_y);
     }
     // todo joystick_button
-
+#   ifdef SPLIT_JOYSTICK_ENABLE
+      bool slave_joystick_update = false;
+      if(is_keyboard_master()){
+        // recvではなくてtransaction_register_rpcで登録して、syncで要求出して、もらう 関数用意されているけどmaster側の役目のような気がする
+        slave_joystick_update = transaction_rpc_recv(GET_JOYSTICK_DATA, sizeof(slave_joystick_status), &slave_joystick_status);
+      }
+#   endif // SPLIT_JOYSTICK_ENABLE
+    if(!is_keyboard_master()) return;
     switch(joystick_mode){
       case 0: // gamepad
-        joystick_status.axes[is_keyboard_left() ? 0 : 2] = joystick_trim(own_joystick_status.joystick_x);
-        joystick_status.axes[is_keyboard_left() ? 1 : 3] = joystick_trim(own_joystick_status.joystick_y);
-        //    setPinInput(JOYSTICK_BUTTON);
-        //    joystick_status.buttons[0] = readPin(JOYSTICK_BUTTON);
-        if(analogReadPin(F5) > 20)
-          joystick_status.buttons[0] = 0;
-        else
-          joystick_status.buttons[0] = 1;
-
+        #ifndef SPLIT_JOYSTICK_ENABLE
+          joystick_status.axes[0] = joystick_trim(own_joystick_status.joystick_x);
+          joystick_status.axes[1] = joystick_trim(own_joystick_status.joystick_y);
+          if(analogReadPin(F5) > 20)
+            joystick_status.buttons[0] = 0;
+          else
+            joystick_status.buttons[0] = 1;
+        #else
+          joystick_status.axes[is_keyboard_left() ? 0 : 2] = joystick_trim(own_joystick_status.joystick_x);
+          joystick_status.axes[is_keyboard_left() ? 1 : 3] = joystick_trim(own_joystick_status.joystick_y);
+          //    setPinInput(JOYSTICK_BUTTON);
+          //    joystick_status.buttons[0] = readPin(JOYSTICK_BUTTON);
+          if(slave_joystick_update){
+            joystick_status.axes[is_keyboard_left() ? 2 : 0] = joystick_trim(slave_joystick_status.joystick_x);
+            joystick_status.axes[is_keyboard_left() ? 3 : 1] = joystick_trim(slave_joystick_status.joystick_y);
+//            joystick_status.buttons[1] = slave_joystick_status.joystick_button; これ間違い
+          }
+        #endif // SPLIT_JOYSTICK_ENABLE
         joystick_status.status |= JS_UPDATED;
         send_joystick_packet(&joystick_status);
         joystick_status.status &= ~JS_UPDATED;

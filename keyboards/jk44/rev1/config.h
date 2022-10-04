@@ -14,7 +14,6 @@
 #define DIODE_DIRECTION COL2ROW
 #define SOFT_SERIAL_PIN D2
 #define SPLIT_HAND_PIN F4
-#define SPLIT_TRANSACTION_IDS_KB JOYSTICK_SYNC
 
 #define DEBOUNCE 5
 
@@ -34,10 +33,17 @@
 #endif
 
 #ifdef JOYSTICK_ENABLE
+    #define SPLIT_JOYSTICK_ENABLE 開放への道のりは遠い。。。
     // Max 6: X, Y, Z, Rx, Ry, Rz
-    #define JOYSTICK_AXES_COUNT 4
-    #define JOYSTICK_BUTTON_COUNT 2
-    #define SPLIT_JOYSTICK_ENABLE
+    #ifdef SPLIT_JOYSTICK_ENABLE
+//        #define SERIAL_USE_MULTI_TRANSACTION
+        #define SPLIT_TRANSACTION_IDS_KB GET_JOYSTICK_DATA
+        #define JOYSTICK_AXES_COUNT 4
+        #define JOYSTICK_BUTTON_COUNT 2
+    #else
+        #define JOYSTICK_AXES_COUNT 2
+        #define JOYSTICK_BUTTON_COUNT 1
+    #endif
     #define ANALOG_JOYSTICK_X_AXIS_PIN F6
     #define ANALOG_JOYSTICK_Y_AXIS_PIN F7
     #define ANALOG_JOYSTICK_CLICK_PIN F5
