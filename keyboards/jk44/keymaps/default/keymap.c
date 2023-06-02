@@ -66,8 +66,7 @@ const key_override_t quot_key_override = ko_make_with_layers_and_negmods(0, KC_Q
 const key_override_t dquo_key_override = ko_make_basic(MOD_MASK_SHIFT, KC_QUOT, JP_DQUO);
 const key_override_t grv_key_override = ko_make_with_layers_and_negmods(0, KC_GRV, JP_GRV, ~0, (uint8_t) MOD_MASK_SHIFT);
 const key_override_t tild_key_override = ko_make_basic(MOD_MASK_SHIFT, KC_GRV, JP_TILD);
-const key_override_t zkhk_key_override = ko_make_basic(MOD_MASK_SHIFT, KC_SPC, A(JP_ZKHK));
-
+const key_override_t zkhk_key_override = ko_make_basic(0, S(KC_SPC), JP_ZKHK);
 
 const key_override_t **key_overrides = (const key_override_t *[]){
     &at_key_override,
@@ -119,7 +118,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   KC_TAB,   KC_Q,   KC_W,    KC_E,    KC_R,    KC_T,                     KC_Y,    KC_U,    KC_I,    KC_O,    KC_P,    KC_MINS,
   KC_LCTRL, KC_A,   KC_S,    KC_D,    KC_F,    KC_G,                     KC_H,    KC_J,    KC_K,    KC_L,    KC_SCLN, KC_QUOT,
   KC_LSFT,  KC_Z,   KC_X,    KC_C,    KC_V,    KC_B,                     KC_N,    KC_M,    KC_COMM, KC_DOT,  KC_SLSH,  KC_EQL,
-                  KC_LALT, KC_LGUI, A(KC_GRV),  LT(1,KC_SPC),   LT(2,KC_ENT),  KC_BSPC,  KC_DEL,  KC_ESC
+                  KC_LALT, KC_LGUI, S(KC_SPC),  LT(1,KC_SPC),   LT(2,KC_ENT),  KC_BSPC,  KC_DEL,  KC_ESC
 ),
 /* LOWER
  * ,-----------------------------------------.                    ,-----------------------------------------.
