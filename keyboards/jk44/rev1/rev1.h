@@ -31,3 +31,8 @@ void change_joystick_mode(int8_t mode);
 uint8_t toggle_joystick_mode(void);
 void reset_joystick_calibrate(void);
 uint8_t get_joystick_mode(void);
+void teams_toggle_mute(void);
+void teams_toggle_video(void);
+void teams_toggle_hand(void);
+void teams_blur(void);
+void teams_unblur(void);

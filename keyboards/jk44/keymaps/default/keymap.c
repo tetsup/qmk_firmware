@@ -17,6 +17,7 @@
 #include QMK_KEYBOARD_H
 #include "keymap_jp.h"
 #include <stdio.h>
+#include "raw_hid.h"
 
 #define RAISE MO(_RAISE)
 #define LOWER MO(_LOWER)
@@ -25,6 +26,7 @@
 #define JOY_DIV TOGGLE_JOYMOUSE_DIVISION
 #define JOY_CAL CALIBRATE_JOYSTICK
 #define OLED_LG TOGGLE_OLED_LOG
+#define TEAMS_ENABLE
 
 enum layer_number {
   _QWERTY = 0,
@@ -37,7 +39,11 @@ enum my_keycodes {
   TOGGLE_JOYSTICK_MODE = SAFE_RANGE,
   TOGGLE_JOYMOUSE_DIVISION,
   CALIBRATE_JOYSTICK,
-  TOGGLE_OLED_LOG
+  TOGGLE_OLED_LOG,
+  TOGGLE_MUTE,
+  TOGGLE_VIDEO,
+  TOGGLE_HAND,
+  TOGGLE_BLUR
 };
 
 const key_override_t at_key_override = ko_make_basic(MOD_MASK_SHIFT, KC_2, JP_AT);
@@ -175,7 +181,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   [_ADJUST] = LAYOUT(
   OVR_TGL, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,                   XXXXXXX, KC_PSCR, XXXXXXX, XXXXXXX, OLED_LG, RGB_TOG,
   XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,                   KC_HOME, KC_PGDN, KC_PGUP, KC_END, XXXXXXX, JOY_CAL,
-  XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,                   XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, JOY_DIV, JOY_MD,
+  XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, TOGGLE_MUTE,               XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, JOY_DIV, JOY_MD,
                              _______, _______, _______, _______, _______,  _______, _______, _______
   )
 };
@@ -286,6 +292,31 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
         }
         break;
 #   endif // JOYSTICK_ENABLE
+#   ifdef TEAMS_ENABLE
+      case TOGGLE_MUTE:
+        if(record->event.pressed) {
+          teams_toggle_mute();
+        }
+        break;
+      case TOGGLE_VIDEO:
+        if(record->event.pressed) {
+//          teams_toggle_video();
+        }
+        break;
+      case TOGGLE_HAND:
+        if(record->event.pressed) {
+//          teams_toggle_hand();
+        }
+        break;
+      case TOGGLE_BLUR:
+        if(record->event.pressed) {
+//          teams_blur();
+        }
+        else {
+//          teams_unblur();
+        }
+        break;
+#   endif // TEAMS_ENABLE
   }
 
   if (record->event.pressed) {
@@ -295,6 +326,11 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     // set_timelog();
   }
   return true;
+}
+
+void raw_hid_receive(uint8_t *data, uint8_t length) {
+  // Your code goes here. data is the packet received from host.
+//  raw_hid_send(data, length);
 }
 
 #ifdef RGBLIGHT_ENABLE

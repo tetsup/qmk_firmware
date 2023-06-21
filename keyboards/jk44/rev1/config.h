@@ -5,6 +5,8 @@
 #define DEVICE_VER 0x0001
 #define MANUFACTURER tetsup
 #define PRODUCT JK44
+#define RAW_USAGE_PAGE 0xFF80
+#define RAW_USAGE_ID 0x68
 
 #define MATRIX_ROWS 8
 #define MATRIX_COLS 6
@@ -16,6 +18,9 @@
 #define SPLIT_HAND_PIN F4
 
 #define DEBOUNCE 5
+
+#define TAPPING_TERM 180
+#define HOLD_ON_OTHER_KEY_PRESS
 
 #ifdef RGBLIGHT_ENABLE
     #define RGB_DI_PIN D3
@@ -33,7 +38,7 @@
 #endif
 
 #ifdef JOYSTICK_ENABLE
-    #define SPLIT_JOYSTICK_ENABLE 開放への道のりは遠い。。。
+//    #define SPLIT_JOYSTICK_ENABLE //暫定停止
     // Max 6: X, Y, Z, Rx, Ry, Rz
     #ifdef SPLIT_JOYSTICK_ENABLE
 //        #define SERIAL_USE_MULTI_TRANSACTION

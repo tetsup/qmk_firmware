@@ -5,6 +5,7 @@
 #include "split_util.h"
 #include "transactions.h"
 #include "crc.h"
+#include "raw_hid.h"
 
 #ifdef JOYSTICK_ENABLE
 
@@ -174,5 +175,12 @@
         break;
     }
   }
-
 #endif // JOYSTICK_ENABLE
+
+void teams_toggle_mute(void){
+  uint8_t toggle_mute_data[32];
+  toggle_mute_data[0] = 'm';
+  toggle_mute_data[1] = 0x01;
+  toggle_mute_data[2] = 0x00;
+  raw_hid_send(toggle_mute_data, 32);
+}
